@@ -32,14 +32,14 @@ Inventory decrease → counted as sales
 Inventory increase → treated as restock (initially ignored)
 
 # Business KPIs Computed:
-est_sales_sp = Estimated sales using selling price
-est_sales_mrp = Estimated sales using MRP
-wt_osa = On-shelf availability across all stores
-wt_osa_ls = On-shelf availability across listed stores
-discount = Relative difference between MRP and SP
+est_sales_sp = Estimated sales using selling price,
+est_sales_mrp = Estimated sales using MRP,
+wt_osa = On-shelf availability across all stores,
+wt_osa_ls = On-shelf availability across listed stores,
+discount = Relative difference between MRP and SP,
 Mode-based selection of sp and mrp for clean aggregation
 
 # Data Cleaning:
-Excluded store records with no city mapping
-Normalized SKU data using category and city joins
+1.Excluded store records with no city mapping
+2.Normalized SKU data using category and city joins
 
