@@ -1,0 +1,85 @@
+CREATE TABLE blinkit_city_insights AS
+WITH base_data AS (
+  SELECT
+    a.created_at::date AS date,
+    a.store_id,
+    a.sku_id,
+    a.sku_name,
+    a.selling_price,
+    a.mrp,
+    a.inventory,
+    a.image_url,
+    a.brand_id,
+    a.brand,
+    a.unit,
+    a.l1_category_id,
+    a.l2_category_id,
+    c.city_name,
+    b.l1_category,
+    b.l2_category,
+    ROW_NUMBER() OVER (PARTITION BY a.store_id, a.sku_id ORDER BY a.created_at) AS rn,
+    LAG(a.inventory) OVER (PARTITION BY a.store_id, a.sku_id ORDER BY a.created_at) AS prev_inventory
+  FROM all_blinkit_category_scraping_stream a
+  JOIN blinkit_city_map c ON a.store_id = c.store_id
+  LEFT JOIN blinkit_categories b ON a.l2_category_id = b.l2_category_id
+),
+estimation_logic AS (
+  SELECT
+    *,
+    CASE 
+      WHEN prev_inventory IS NULL THEN 0
+      WHEN prev_inventory >= inventory THEN prev_inventory - inventory  
+      ELSE 0 
+    END AS est_qty_sold_store
+  FROM base_data
+),
+city_level_aggregation AS (
+  SELECT
+    date,
+    sku_id,
+    sku_name,
+    brand_id,
+    brand,
+    image_url,
+    city_name,
+    l1_category_id AS category_id,
+    l1_category AS category_name,
+    l2_category_id AS sub_category_id,
+    l2_category AS sub_category_name,
+    
+    SUM(est_qty_sold_store) AS est_qty_sold,
+    MODE() WITHIN GROUP (ORDER BY mrp) AS mrp,
+    MODE() WITHIN GROUP (ORDER BY selling_price) AS sp,
+    
+    COUNT(DISTINCT store_id) AS listed_ds_count,
+    SUM(CASE WHEN inventory > 0 THEN 1 ELSE 0 END) AS in_stock_store_count
+  FROM estimation_logic
+  GROUP BY 
+    date, sku_id, sku_name, brand_id, brand, image_url, city_name,
+    l1_category_id, l1_category, l2_category_id, l2_category
+),
+ds_counts AS (
+  SELECT
+    a.created_at::date AS date,
+    COUNT(DISTINCT a.store_id) AS ds_count
+  FROM all_blinkit_category_scraping_stream a
+  JOIN blinkit_city_map c ON a.store_id = c.store_id
+  GROUP BY a.created_at::date
+)
+
+SELECT
+  agg.*,
+  agg.est_qty_sold * agg.sp AS est_sales_sp,
+  agg.est_qty_sold * agg.mrp AS est_sales_mrp,
+  ds.ds_count,
+  ROUND(
+  (CAST(agg.in_stock_store_count AS numeric) / ds.ds_count), 4
+) AS wt_osa,
+
+  ROUND(
+  (CAST(agg.in_stock_store_count AS numeric) / NULLIF(agg.listed_ds_count, 0)), 4
+) AS wt_osa_ls
+,
+  ROUND((agg.mrp - agg.sp) / NULLIF(agg.mrp, 0), 4) AS discount
+FROM city_level_aggregation agg
+JOIN ds_counts ds ON agg.date = ds.date;
