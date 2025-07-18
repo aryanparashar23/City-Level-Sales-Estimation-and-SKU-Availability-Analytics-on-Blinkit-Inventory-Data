@@ -1,6 +1,9 @@
 # City-Level-Sales-Estimation-and-SKU-Availability-Analytics-on-Blinkit-Inventory-Data
 This project derives a city-level insights table (blinkit_city_insights) by integrating and analyzing real-world SKU inventory data from Blinkit, a quick-commerce platform. It focuses on estimating quantity sold (est_qty_sold), calculating revenue metrics, and assessing product availability across dark stores and cities.
 
+<img width="1278" height="722" alt="Insight1" src="https://github.com/user-attachments/assets/5b4fc1e3-1c2f-4b96-b89e-ecb26070f567" />
+<img width="1285" height="730" alt="insight2" src="https://github.com/user-attachments/assets/6eb6773b-663e-46a2-8650-aee4dc3e54cc" />
+
 # Tech Stack
 SQL (PostgreSQL)
 Data Engineering Concepts
